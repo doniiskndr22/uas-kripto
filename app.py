@@ -7,14 +7,14 @@ from cryptography.hazmat.primitives import padding, hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 
-# KONFIGURASI FLASK
+#flask 
 app = Flask(__name__, template_folder='.', static_folder='.', static_url_path='')
 app.secret_key = "kunci_rahasia_skripsi_123"
 
-# --- 1. LOGIKA ENKRIPSI (AES + LSB) ---
+#enkripsi logika nya
 def encrypt_logic(pdf_bytes, cover_image, password):
     try:
-        # A. ENKRIPSI AES-256
+        #AES
         salt = os.urandom(16)
         iv = os.urandom(16)
         kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100000, backend=default_backend())
@@ -29,7 +29,7 @@ def encrypt_logic(pdf_bytes, cover_image, password):
         
         final_data = salt + iv + ciphertext 
         
-        # B. STEGANOGRAFI LSB
+        #LSB
         img = cover_image.convert('RGB')
         width, height = img.size
         pixels = img.load()
@@ -37,7 +37,7 @@ def encrypt_logic(pdf_bytes, cover_image, password):
         length_bytes = len(final_data).to_bytes(4, 'big')
         full_payload = length_bytes + final_data
         
-        # Cek Kapasitas
+        #cek kapasitas 
         if len(full_payload) > (width * height * 3) // 8:
             return None, "Gambar terlalu kecil! Gunakan gambar resolusi tinggi."
             
@@ -62,7 +62,7 @@ def encrypt_logic(pdf_bytes, cover_image, password):
     except Exception as e:
         return None, str(e)
 
-# --- 2. LOGIKA DEKRIPSI (REVISI PESAN ERROR) ---
+#logika deskripsi nya
 def decrypt_logic(stego_image, password):
     try:
         img = stego_image.convert('RGB')
@@ -80,7 +80,7 @@ def decrypt_logic(stego_image, password):
         
         pixel_gen = pixel_iterator()
         
-        # 1. BACA HEADER
+        #baca header
         header_bits_list = []
         for _ in range(32):
             try:
@@ -90,7 +90,6 @@ def decrypt_logic(stego_image, password):
                 break
                 
         if len(header_bits_list) < 32:
-             # ERROR 1: Gambar rusak/terlalu kecil
             return None, "Gagal: Gambar rusak atau bukan format yang benar."
 
         header_bits = "".join(header_bits_list)
@@ -99,7 +98,7 @@ def decrypt_logic(stego_image, password):
         # SAFETY CHECK (POS 1: CEK HEADER)
         total_bits_needed = data_len * 8
         if total_bits_needed > max_pixels or total_bits_needed <= 0:
-            # INI PERBAIKANNYA: Pesan error spesifik sesuai Flowchart Belah Ketupat 1
+            #eror untuk png tanpa pesan
             return None, "Gagal: Ini BUKAN gambar Stego (atau header rusak). Tidak ada pesan rahasia di sini."
 
         # 2. BACA PAYLOAD
@@ -118,7 +117,7 @@ def decrypt_logic(stego_image, password):
             if len(byte_val) == 8:
                 encrypted_data.append(int(byte_val, 2))
             
-        # 3. DEKRIPSI AES (POS 2: CEK PASSWORD)
+        #deskripsi AES 
         try:
             salt = bytes(encrypted_data[:16])
             iv = bytes(encrypted_data[16:32])
@@ -135,7 +134,7 @@ def decrypt_logic(stego_image, password):
             original_pdf = unpadder.update(padded_data) + unpadder.finalize()
             
         except Exception:
-            # INI PERBAIKANNYA: Pesan error spesifik sesuai Flowchart Belah Ketupat 2
+            #eror untuk pass salah
             return None, "Gagal: Password Salah! (Padding Error)"
         
         output = BytesIO(original_pdf)
@@ -144,7 +143,7 @@ def decrypt_logic(stego_image, password):
         
     except Exception as e:
         return None, f"Gagal memproses: {str(e)}"
-# --- ROUTES ---
+#routes
 @app.route('/')
 def index():
     return render_template('index.html')
