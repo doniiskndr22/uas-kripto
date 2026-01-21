@@ -40,10 +40,10 @@
 
             <div class="tabs-container">
                 <button class="tab-btn active" onclick="openTab(event, 'encrypt-tab')">
-                    <i class="fa-solid fa-lock"></i> PENGIRIM (Enkripsi)
+                    <i class="fa-solid fa-lock"></i> ENKRIPSi
                 </button>
                 <button class="tab-btn" onclick="openTab(event, 'decrypt-tab')">
-                    <i class="fa-solid fa-unlock-keyhole"></i> PENERIMA (Dekripsi)
+                    <i class="fa-solid fa-unlock-keyhole"></i> DESKRIPSI
                 </button>
             </div>
 
@@ -51,13 +51,13 @@
                 <form action="/encrypt" method="POST" enctype="multipart/form-data" class="cyber-form">
                     <div class="row">
                         <div class="col">
-                            <label><i class="fa-solid fa-file-pdf"></i> Upload PDF Rahasia</label>
+                            <label><i class="fa-solid fa-file-pdf"></i> Upload/Drag Secret PDF</label>
                             <div class="file-input-wrapper">
                                 <input type="file" name="pdf_file" accept=".pdf" required>
                             </div>
                         </div>
                         <div class="col">
-                            <label><i class="fa-solid fa-image"></i> Upload Cover Image</label>
+                            <label><i class="fa-solid fa-image"></i> Upload/Drag Cover Image</label>
                             <div class="file-input-wrapper">
                                 <input type="file" name="cover_image" accept="image/*" required>
                             </div>
@@ -65,13 +65,13 @@
                     </div>
 
                     <div class="form-group full-width">
-                        <label><i class="fa-solid fa-key"></i> Password Kunci</label>
+                        <label><i class="fa-solid fa-key"></i> Password </label>
                         <input type="password" name="password" placeholder="Masukkan kunci rahasia yang kuat..."
                             required>
                     </div>
 
                     <button type="submit" class="btn-neon blue">
-                        <i class="fa-solid fa-shield-virus"></i> EKSEKUSI ENKRIPSI
+                        <i class="fa-solid fa-shield-virus"></i> CREATE ENKRIPSI
                     </button>
                 </form>
             </div>
@@ -79,26 +79,26 @@
             <div id="decrypt-tab" class="tab-content">
                 <form action="/decrypt" method="POST" enctype="multipart/form-data" class="cyber-form">
                     <div class="form-group">
-                        <label><i class="fa-solid fa-image"></i> Upload Stego Image (PNG)</label>
+                        <label><i class="fa-solid fa-image"></i> Upload/drag Stego Image (PNG)</label>
                         <div class="file-input-wrapper">
                             <input type="file" name="stego_image" accept="image/*" required>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label><i class="fa-solid fa-key"></i> Password Pembuka</label>
+                        <label><i class="fa-solid fa-key"></i> Password </label>
                         <input type="password" name="password" placeholder="Masukkan password pengirim..." required>
                     </div>
 
                     <button type="submit" class="btn-neon green">
-                        <i class="fa-solid fa-box-open"></i> BUKA & PULIHKAN PDF
+                        <i class="fa-solid fa-box-open"></i> UPLOAD 
                     </button>
                 </form>
             </div>
 
         </div>
         <footer>
-            <p>&copy; 2026 Teknik Informatika - Keamanan Data Kelompok 5</p>
+            <p>&copy; 2026 Teknik Informatika - Kriptografi Kelompok 5</p>
         </footer>
     </div>
 
