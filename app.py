@@ -62,15 +62,14 @@ def encrypt_logic(pdf_bytes, cover_image, password):
     except Exception as e:
         return None, str(e)
 
-# --- 2. LOGIKA DEKRIPSI (OPTIMALISASI KECEPATAN) ---
+# --- 2. LOGIKA DEKRIPSI (REVISI PESAN ERROR) ---
 def decrypt_logic(stego_image, password):
     try:
         img = stego_image.convert('RGB')
         pixels = img.load()
         width, height = img.size
-        max_pixels = width * height * 3 # Total bit tersedia
+        max_pixels = width * height * 3 
         
-        # ITERATOR: Cara cepat baca piksel tanpa loop bersarang yang berat
         def pixel_iterator():
             for y in range(height):
                 for x in range(width):
@@ -81,8 +80,8 @@ def decrypt_logic(stego_image, password):
         
         pixel_gen = pixel_iterator()
         
-        # 1. BACA HEADER (32 bit pertama)
-        header_bits_list = [] # Pakai LIST, bukan String (Jauh lebih cepat)
+        # 1. BACA HEADER
+        header_bits_list = []
         for _ in range(32):
             try:
                 val = next(pixel_gen)
@@ -91,18 +90,19 @@ def decrypt_logic(stego_image, password):
                 break
                 
         if len(header_bits_list) < 32:
-            return None, "Gambar rusak atau bukan format yang benar."
+             # ERROR 1: Gambar rusak/terlalu kecil
+            return None, "Gagal: Gambar rusak atau bukan format yang benar."
 
         header_bits = "".join(header_bits_list)
         data_len = int(header_bits, 2)
         
-        # SAFETY CHECK PENTING: Cegah loading selamanya
-        # Jika header bilang ukurannya 5GB padahal gambar cuma 1MB, berarti itu bukan gambar stego!
+        # SAFETY CHECK (POS 1: CEK HEADER)
         total_bits_needed = data_len * 8
-        if total_bits_needed > max_pixels:
-            return None, "Gagal: Header tidak valid. Kemungkinan ini gambar biasa (bukan Stego) atau password salah."
+        if total_bits_needed > max_pixels or total_bits_needed <= 0:
+            # INI PERBAIKANNYA: Pesan error spesifik sesuai Flowchart Belah Ketupat 1
+            return None, "Gagal: Ini BUKAN gambar Stego (atau header rusak). Tidak ada pesan rahasia di sini."
 
-        # 2. BACA PAYLOAD (Isi Data)
+        # 2. BACA PAYLOAD
         payload_bits_list = []
         for _ in range(total_bits_needed):
             try:
@@ -112,31 +112,30 @@ def decrypt_logic(stego_image, password):
                 break
         
         payload_bits = "".join(payload_bits_list)
-        
-        # Ubah Biner ke Bytes
         encrypted_data = bytearray()
         for i in range(0, len(payload_bits), 8):
             byte_val = payload_bits[i:i+8]
             if len(byte_val) == 8:
                 encrypted_data.append(int(byte_val, 2))
             
-        # 3. DEKRIPSI AES
-        salt = bytes(encrypted_data[:16])
-        iv = bytes(encrypted_data[16:32])
-        ciphertext = bytes(encrypted_data[32:])
-        
-        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100000, backend=default_backend())
-        key = kdf.derive(password.encode())
-        
-        cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-        decryptor = cipher.decryptor()
-        
-        # Tambahkan Try-Catch khusus padding agar tidak crash total
+        # 3. DEKRIPSI AES (POS 2: CEK PASSWORD)
         try:
+            salt = bytes(encrypted_data[:16])
+            iv = bytes(encrypted_data[16:32])
+            ciphertext = bytes(encrypted_data[32:])
+            
+            kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100000, backend=default_backend())
+            key = kdf.derive(password.encode())
+            
+            cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+            decryptor = cipher.decryptor()
+            
             padded_data = decryptor.update(ciphertext) + decryptor.finalize()
             unpadder = padding.PKCS7(128).unpadder()
             original_pdf = unpadder.update(padded_data) + unpadder.finalize()
-        except ValueError:
+            
+        except Exception:
+            # INI PERBAIKANNYA: Pesan error spesifik sesuai Flowchart Belah Ketupat 2
             return None, "Gagal: Password Salah! (Padding Error)"
         
         output = BytesIO(original_pdf)
@@ -145,7 +144,6 @@ def decrypt_logic(stego_image, password):
         
     except Exception as e:
         return None, f"Gagal memproses: {str(e)}"
-
 # --- ROUTES ---
 @app.route('/')
 def index():
