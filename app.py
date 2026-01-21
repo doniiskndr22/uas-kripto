@@ -7,14 +7,14 @@ from cryptography.hazmat.primitives import padding, hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 
-app = Flask(__name__)
-app.secret_key = "kunci_rahasia_untuk_session"  # Diperlukan untuk flash message
+# KONFIGURASI FLASK
+app = Flask(__name__, template_folder='.', static_folder='.', static_url_path='')
+app.secret_key = "kunci_rahasia_skripsi_123"
 
-# --- FUNGSI LOGIKA KRIPTOGRAFI (Sama seperti sebelumnya) ---
-
+# --- 1. LOGIKA ENKRIPSI (AES + LSB) ---
 def encrypt_logic(pdf_bytes, cover_image, password):
     try:
-        # 1. AES Encryption
+        # A. ENKRIPSI AES-256
         salt = os.urandom(16)
         iv = os.urandom(16)
         kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100000, backend=default_backend())
@@ -27,9 +27,9 @@ def encrypt_logic(pdf_bytes, cover_image, password):
         encryptor = cipher.encryptor()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
         
-        final_data = salt + iv + ciphertext # Gabungan data
+        final_data = salt + iv + ciphertext 
         
-        # 2. LSB Steganography
+        # B. STEGANOGRAFI LSB
         img = cover_image.convert('RGB')
         width, height = img.size
         pixels = img.load()
@@ -37,8 +37,9 @@ def encrypt_logic(pdf_bytes, cover_image, password):
         length_bytes = len(final_data).to_bytes(4, 'big')
         full_payload = length_bytes + final_data
         
+        # Cek Kapasitas
         if len(full_payload) > (width * height * 3) // 8:
-            return None, "Gambar terlalu kecil untuk menampung file PDF ini."
+            return None, "Gambar terlalu kecil! Gunakan gambar resolusi tinggi."
             
         binary_data = ''.join(f'{byte:08b}' for byte in full_payload)
         idx = 0
@@ -61,46 +62,65 @@ def encrypt_logic(pdf_bytes, cover_image, password):
     except Exception as e:
         return None, str(e)
 
+# --- 2. LOGIKA DEKRIPSI (OPTIMALISASI KECEPATAN) ---
 def decrypt_logic(stego_image, password):
     try:
         img = stego_image.convert('RGB')
         pixels = img.load()
         width, height = img.size
+        max_pixels = width * height * 3 # Total bit tersedia
         
-        # Baca Header 32 bit
-        header_bits = ""
-        for y in range(height):
-            for x in range(width):
-                r, g, b = pixels[x, y]
-                header_bits += str(r & 1); 
-                if len(header_bits) >= 32: break
-                header_bits += str(g & 1)
-                if len(header_bits) >= 32: break
-                header_bits += str(b & 1)
-                if len(header_bits) >= 32: break
-            if len(header_bits) >= 32: break
-            
+        # ITERATOR: Cara cepat baca piksel tanpa loop bersarang yang berat
+        def pixel_iterator():
+            for y in range(height):
+                for x in range(width):
+                    r, g, b = pixels[x, y]
+                    yield r
+                    yield g
+                    yield b
+        
+        pixel_gen = pixel_iterator()
+        
+        # 1. BACA HEADER (32 bit pertama)
+        header_bits_list = [] # Pakai LIST, bukan String (Jauh lebih cepat)
+        for _ in range(32):
+            try:
+                val = next(pixel_gen)
+                header_bits_list.append(str(val & 1))
+            except StopIteration:
+                break
+                
+        if len(header_bits_list) < 32:
+            return None, "Gambar rusak atau bukan format yang benar."
+
+        header_bits = "".join(header_bits_list)
         data_len = int(header_bits, 2)
-        total_needed = 32 + (data_len * 8)
         
-        # Baca Payload
-        bits = ""
-        count = 0
-        for y in range(height):
-            for x in range(width):
-                r, g, b = pixels[x, y]
-                for val in [r, g, b]:
-                    bits += str(val & 1); count += 1
-                    if count >= total_needed: break
-                if count >= total_needed: break
-            if count >= total_needed: break
-            
-        payload_bits = bits[32:]
+        # SAFETY CHECK PENTING: Cegah loading selamanya
+        # Jika header bilang ukurannya 5GB padahal gambar cuma 1MB, berarti itu bukan gambar stego!
+        total_bits_needed = data_len * 8
+        if total_bits_needed > max_pixels:
+            return None, "Gagal: Header tidak valid. Kemungkinan ini gambar biasa (bukan Stego) atau password salah."
+
+        # 2. BACA PAYLOAD (Isi Data)
+        payload_bits_list = []
+        for _ in range(total_bits_needed):
+            try:
+                val = next(pixel_gen)
+                payload_bits_list.append(str(val & 1))
+            except StopIteration:
+                break
+        
+        payload_bits = "".join(payload_bits_list)
+        
+        # Ubah Biner ke Bytes
         encrypted_data = bytearray()
         for i in range(0, len(payload_bits), 8):
-            encrypted_data.append(int(payload_bits[i:i+8], 2))
+            byte_val = payload_bits[i:i+8]
+            if len(byte_val) == 8:
+                encrypted_data.append(int(byte_val, 2))
             
-        # AES Decryption
+        # 3. DEKRIPSI AES
         salt = bytes(encrypted_data[:16])
         iv = bytes(encrypted_data[16:32])
         ciphertext = bytes(encrypted_data[32:])
@@ -110,19 +130,23 @@ def decrypt_logic(stego_image, password):
         
         cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
         decryptor = cipher.decryptor()
-        padded_data = decryptor.update(ciphertext) + decryptor.finalize()
         
-        unpadder = padding.PKCS7(128).unpadder()
-        original_pdf = unpadder.update(padded_data) + unpadder.finalize()
+        # Tambahkan Try-Catch khusus padding agar tidak crash total
+        try:
+            padded_data = decryptor.update(ciphertext) + decryptor.finalize()
+            unpadder = padding.PKCS7(128).unpadder()
+            original_pdf = unpadder.update(padded_data) + unpadder.finalize()
+        except ValueError:
+            return None, "Gagal: Password Salah! (Padding Error)"
         
         output = BytesIO(original_pdf)
         output.seek(0)
         return output, "Sukses"
-    except Exception:
-        return None, "Gagal: Password salah atau data rusak."
+        
+    except Exception as e:
+        return None, f"Gagal memproses: {str(e)}"
 
-# --- ROUTES (JALUR WEB) ---
-
+# --- ROUTES ---
 @app.route('/')
 def index():
     return render_template('index.html')

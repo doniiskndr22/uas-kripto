@@ -1,66 +1,104 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AES-256 & LSB Crypto</title>
+    <title>SecureCrypto | AES-256 & LSB</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
-    <div class="container">
-        <header>
-            <h1>🔒 Sistem Kriptografi PDF</h1>
-            <p>Kombinasi AES-256 (Security) + LSB (Steganography)</p>
+    <div class="bg-animation"></div>
+
+    <div class="main-wrapper">
+        <header class="app-header">
+            <div class="logo">
+                <i class="fa-solid fa-shield-halved"></i> Secure<span>Crypto</span>
+            </div>
+            <p class="subtitle">Advanced Encryption Standard (AES-256) & LSB Steganography</p>
         </header>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+        <div class="glass-panel">
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="openTab(event, 'encrypt-tab')">📤 Pengirim (Enkripsi)</button>
-            <button class="tab-btn" onclick="openTab(event, 'decrypt-tab')">📥 Penerima (Dekripsi)</button>
-        </div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="notification-area">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fa-solid fa-circle-info"></i> {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
 
-        <div id="encrypt-tab" class="tab-content active">
-            <form action="/encrypt" method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label>1. Upload PDF Rahasia</label>
-                    <input type="file" name="pdf_file" accept=".pdf" required>
-                </div>
-                <div class="form-group">
-                    <label>2. Upload Gambar Cover (PNG/JPG)</label>
-                    <input type="file" name="cover_image" accept="image/*" required>
-                </div>
-                <div class="form-group">
-                    <label>3. Masukkan Password</label>
-                    <input type="password" name="password" placeholder="Kunci rahasia..." required>
-                </div>
-                <button type="submit" class="btn-primary">🔒 Proses & Download</button>
-            </form>
-        </div>
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="openTab(event, 'encrypt-tab')">
+                    <i class="fa-solid fa-lock"></i> PENGIRIM (Enkripsi)
+                </button>
+                <button class="tab-btn" onclick="openTab(event, 'decrypt-tab')">
+                    <i class="fa-solid fa-unlock-keyhole"></i> PENERIMA (Dekripsi)
+                </button>
+            </div>
 
-        <div id="decrypt-tab" class="tab-content">
-            <form action="/decrypt" method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label>1. Upload Gambar Stego (Hasil)</label>
-                    <input type="file" name="stego_image" accept="image/*" required>
-                </div>
-                <div class="form-group">
-                    <label>2. Masukkan Password Pembuka</label>
-                    <input type="password" name="password" placeholder="Password yang sama..." required>
-                </div>
-                <button type="submit" class="btn-secondary">🔓 Buka & Download PDF</button>
-            </form>
+            <div id="encrypt-tab" class="tab-content active">
+                <form action="/encrypt" method="POST" enctype="multipart/form-data" class="cyber-form">
+                    <div class="row">
+                        <div class="col">
+                            <label><i class="fa-solid fa-file-pdf"></i> Upload PDF Rahasia</label>
+                            <div class="file-input-wrapper">
+                                <input type="file" name="pdf_file" accept=".pdf" required>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <label><i class="fa-solid fa-image"></i> Upload Cover Image</label>
+                            <div class="file-input-wrapper">
+                                <input type="file" name="cover_image" accept="image/*" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label><i class="fa-solid fa-key"></i> Password Kunci</label>
+                        <input type="password" name="password" placeholder="Masukkan kunci rahasia yang kuat..."
+                            required>
+                    </div>
+
+                    <button type="submit" class="btn-neon blue">
+                        <i class="fa-solid fa-shield-virus"></i> EKSEKUSI ENKRIPSI
+                    </button>
+                </form>
+            </div>
+
+            <div id="decrypt-tab" class="tab-content">
+                <form action="/decrypt" method="POST" enctype="multipart/form-data" class="cyber-form">
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-image"></i> Upload Stego Image (PNG)</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" name="stego_image" accept="image/*" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-key"></i> Password Pembuka</label>
+                        <input type="password" name="password" placeholder="Masukkan password pengirim..." required>
+                    </div>
+
+                    <button type="submit" class="btn-neon green">
+                        <i class="fa-solid fa-box-open"></i> BUKA & PULIHKAN PDF
+                    </button>
+                </form>
+            </div>
+
         </div>
-        
         <footer>
-            &copy; 2026 Kelompok Kriptografi - Universitas Muhammadiyah Riau
+            <p>&copy; 2026 Teknik Informatika - Keamanan Data Kelompok 5</p>
         </footer>
     </div>
 
@@ -68,16 +106,13 @@
         function openTab(evt, tabName) {
             var i, tabcontent, tablinks;
             tabcontent = document.getElementsByClassName("tab-content");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
+            for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
             tablinks = document.getElementsByClassName("tab-btn");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
+            for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
             document.getElementById(tabName).style.display = "block";
             evt.currentTarget.className += " active";
         }
     </script>
 </body>
+
 </html>
