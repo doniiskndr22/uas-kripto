@@ -270,3 +270,46 @@ footer {
         padding: 20px;
     }
 }
+
+/* --- FIX RESPONSIVE MOBILE (Tambahkan di bagian bawah CSS) --- */
+@media screen and (max-width: 768px) {
+    
+    /* 1. Paksa Container Utama agar tidak melebihi lebar layar */
+    .container, .card, .form-wrapper, form {
+        width: 100% !important;
+        max-width: 100vw !important; /* Viewport Width */
+        box-sizing: border-box; /* Agar padding tidak menambah lebar */
+        overflow-x: hidden; /* Sembunyikan scroll samping jika ada sisa */
+    }
+
+    /* 2. Perbaiki Input File yang sering "Offside" */
+    input[type="file"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        font-size: 12px; /* Kecilkan font agar muat */
+        display: block; /* Agar tidak dempet ke samping */
+    }
+
+    /* 3. Jika Anda menggunakan TABLE untuk layout */
+    table {
+        width: 100% !important;
+        table-layout: fixed; /* Paksa sel tabel tidak melebar otomatis */
+        display: block; /* Ubah tabel jadi blok agar bisa di-scroll jika perlu */
+        overflow-x: auto;
+    }
+
+    /* 4. Perbaiki Kotak Putus-putus (Dashed Border) */
+    .upload-area, .form-group, div[style*="border"] {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 10px !important; /* Kurangi padding agar tidak sempit */
+    }
+    
+    /* 5. Tombol Enkripsi/Dekripsi agar tidak loncat */
+    button, .btn {
+        width: 100% !important; /* Tombol jadi penuh di HP */
+        margin-bottom: 10px;
+    }
+}
